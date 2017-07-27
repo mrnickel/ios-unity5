@@ -124,7 +124,7 @@ You can also adjust your
 UNITY_RUNTIME_VERSION
 ```
 
-If you are not using  `5.5.2f1`.
+If you are not using  `2017.1.0f3`.
 
 
 #### Add a new `run script` build phase
@@ -222,8 +222,8 @@ All said and done you will be left with the following:
 //  Created by Adam Venturella on 10/28/15
 //
 //  Updated by Martin Straub on 15/03/2017.
-// Added some stuff to pause unity in order to stop consuming cpu cylces and battery life, when not being displayed. 
-// Indeed, unity will still sit in memory all the time, but that seems to be a more complex thing to solve. 
+// Added some stuff to pause unity in order to stop consuming cpu cylces and battery life, when not being displayed.
+// Indeed, unity will still sit in memory all the time, but that seems to be a more complex thing to solve.
 // Just use `startUnity` and `stopUnity` for running/pausing unity (see also ViewController example below).
 //
 
@@ -234,57 +234,57 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var currentUnityController: UnityAppController?
     var application: UIApplication?
     var isUnityRunning = false
-    
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey : Any]? = nil) -> Bool {
         self.application = application
         unity_init(CommandLine.argc, CommandLine.unsafeArgv)
         currentUnityController = UnityAppController()
         currentUnityController!.application(application, didFinishLaunchingWithOptions: launchOptions)
-        
+
         // first call to startUnity will do some init stuff, so just call it here and directly stop it again
         startUnity()
         stopUnity()
-        
+
         return true
     }
-    
+
     func applicationWillResignActive(_ application: UIApplication) {
         if isUnityRunning {
             currentUnityController?.applicationWillResignActive(application)
         }
     }
-    
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         if isUnityRunning {
             currentUnityController?.applicationDidEnterBackground(application)
         }
     }
-    
+
     func applicationWillEnterForeground(_ application: UIApplication) {
         if isUnityRunning {
             currentUnityController?.applicationWillEnterForeground(application)
         }
     }
-    
+
     func applicationDidBecomeActive(_ application: UIApplication) {
         if isUnityRunning {
             currentUnityController?.applicationDidBecomeActive(application)
         }
     }
-    
+
     func applicationWillTerminate(_ application: UIApplication) {
         if isUnityRunning {
             currentUnityController?.applicationWillTerminate(application)
         }
     }
-    
+
     func startUnity() {
         if !isUnityRunning {
             isUnityRunning = true
             currentUnityController!.applicationDidBecomeActive(application!)
         }
     }
-    
+
     func stopUnity() {
         if isUnityRunning {
             currentUnityController!.applicationWillResignActive(application!)
@@ -328,6 +328,23 @@ NS_INLINE UnityAppController* GetAppController()
 }
 ```
 
+#### Finally, update UnityAppController.mm
+
+Find `- (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions`
+
+Change the following:
+
+```
+UnityInitApplicationNoGraphics([[[NSBundle mainBundle] bundlePath] UTF8String]);
+```
+
+To:
+
+```
+NSBundle * bundle = [NSBundle bundleForClass:[self class]];
+UnityInitApplicationNoGraphics([[bundle bundlePath] UTF8String]);
+```
+
 
 #### Go bananas, you did it! Add the unity view wherever you want!
 
@@ -344,26 +361,42 @@ file for me attached to a storyboard. Here is how I hooked up my little demo:
 
 import UIKit
 
-class ViewController: UIViewController {
+class MyUnityVC: UIViewController {
+
     var unityView: UIView?
-    
-    @IBAction func startUnity(sender: AnyObject) {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         appDelegate.startUnity()
-        
+        self.view.backgroundColor = .green
+
         unityView = UnityGetGLView()!
-        
+
         self.view!.addSubview(unityView!)
         unityView!.translatesAutoresizingMaskIntoConstraints = false
-        
-        // look, non-full screen unity content!
-        let views = ["view": unityView]
-        let w = NSLayoutConstraint.constraints(withVisualFormat: "|-20-[view]-20-|", options: [], metrics: nil, views: views)
-        let h = NSLayoutConstraint.constraints(withVisualFormat: "V:|-75-[view]-50-|", options: [], metrics: nil, views: views)
-        view.addConstraints(w + h)
+
+        self.view.addConstraint(
+            NSLayoutConstraint(item: unityView!, attribute: .left, relatedBy: .equal, toItem: self.view, attribute: .left, multiplier: 1, constant: 20)
+        )
+
+        self.view.addConstraint(
+            NSLayoutConstraint(item: unityView!, attribute: .top, relatedBy: .equal, toItem: self.view, attribute: .top, multiplier: 1, constant: 20)
+        )
+
+        self.view.addConstraint(
+            NSLayoutConstraint(item: unityView!, attribute: .right, relatedBy: .equal, toItem: self.view, attribute: .right, multiplier: 1, constant: -20)
+        )
+
+        self.view.addConstraint(
+            NSLayoutConstraint(item: unityView!, attribute: .bottom, relatedBy: .equal, toItem: self.view, attribute: .bottom, multiplier: 1, constant: -20)
+        )
+
+        // Do any additional setup after loading the view, typically from a nib.
     }
-    
-    @IBAction func stopUnity(sender: AnyObject) {
+
+    override func viewDidDisappear(_ animated: Bool) {
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         appDelegate.stopUnity()
         unityView!.removeFromSuperview()

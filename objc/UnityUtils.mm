@@ -31,11 +31,11 @@ extern "C" void unity_init(int argc, char* argv[])
     {
         UnityInitTrampoline();
         UnityInitRuntime(argc, argv);
-        
+
         RegisterMonoModules();
         NSLog(@"-> registered mono modules %p\n", &constsection);
         RegisterFeatures();
-        
+
         // iOS terminates open sockets when an application enters background mode.
         // The next write to any of such socket causes SIGPIPE signal being raised,
         // even if the request has been done from scripting side. This disables the
